@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Liminal Bloom</title>
+    <link href="{{ theme | theme_css_url }}" media="screen" rel="stylesheet" type="text/css">
+    {{ head_content }}
+  </head>
+  <body id="maintenance">
+    <main class="maintenance">
+      <h1 class="hero__title">
+        <picture>
+          <source srcset="{{ 'logo.webp' | theme_image_url }}" type="image/webp">
+          <img src="{{ 'logo.png' | theme_image_url }}" alt="Liminal Bloom" width="1032" height="550">
+        </picture>
+      </h1>
+      <p class="hero__subtitle">We're working on something new. Check back soon.</p>
+    </main>
+  </body>
+</html>

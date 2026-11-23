@@ -1,0 +1,10 @@
+.bundle
+.DS_Store
+.sass-cache
+build
+tmp
+log
+dist
+.wrangler
+.claude/settings.local.json
+node_modules

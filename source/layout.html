@@ -1,0 +1,156 @@
+{% capture title_suffix %} | Liminal Bloom{% endcapture %}
+{% assign page_title = page.name | append: title_suffix %}
+{% if page.permalink == 'home' %}
+  {% assign page_title = 'Liminal Bloom' %}
+{% endif %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }}</title>
+    <script>document.documentElement.classList.add('js');</script>
+    <link href="{{ theme | theme_css_url }}" media="screen" rel="stylesheet" type="text/css">
+    {{ head_content }}
+    <style>
+      /* Cursor custom (varita con corazón). La punta (hotspot) está arriba a la izquierda. */
+      html {
+        cursor: url('{{ 'cursor.png' | theme_image_url }}') 2 2, auto;
+        cursor: -webkit-image-set(url('{{ 'cursor.png' | theme_image_url }}') 1x, url('{{ 'cursor@2x.png' | theme_image_url }}') 2x) 2 2, auto;
+        cursor: image-set(url('{{ 'cursor.png' | theme_image_url }}') 1x, url('{{ 'cursor@2x.png' | theme_image_url }}') 2x) 2 2, auto;
+      }
+      a, button, label, select, summary, [role="button"] { cursor: inherit; }
+    </style>
+  </head>
+  <body id="{{ page.permalink }}" class="{{ page.category }}">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="site-logo" href="/">
+          <picture>
+            <source srcset="{{ 'logo-header.webp' | theme_image_url }}" type="image/webp">
+            <img src="{{ 'logo-header.png' | theme_image_url }}" alt="Liminal Bloom" width="330" height="141">
+          </picture>
+        </a>
+
+        <nav id="site-nav" class="site-nav" aria-label="Main">
+          <ul>
+            <li><a href="/products">Shop</a></li>
+            {% for custom_page in pages.custom_pages %}
+              <li>{{ custom_page | link_to }}</li>
+            {% endfor %}
+            <li><a class="cart-link" href="/cart">Cart <span class="cart-count">({{ cart.item_count }})</span></a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" class="container content" data-bc-hook="content">
+      {% if page.category == 'custom' %}
+        <article class="custom-page">
+          <h1 class="page-title">{{ page.name }}</h1>
+          <div class="prose">{{ page_content | paragraphs }}</div>
+        </article>
+      {% else %}
+        {{ page_content }}
+      {% endif %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <p>&copy; {{ 'now' | date: '%Y' }} Liminal Bloom</p>
+        {% if pages.required_pages.size > 0 %}
+          <ul class="footer-links">
+            {% for required_page in pages.required_pages %}
+              <li>{{ required_page | link_to }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </footer>
+
+    <script>
+      // Home: el video se descarga completo y recién ahí arranca (antes se ve el primer frame)
+      (function () {
+        var video = document.querySelector('.hero__video');
+        if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var src = video.dataset.src;
+        function start(url) {
+          video.src = url;
+          var playing = video.play();
+          if (playing && playing.catch) playing.catch(function () {});
+        }
+        video.addEventListener('playing', function () { video.classList.add('is-ready'); });
+        // si la pestaña estaba en segundo plano el navegador puede pausarlo: retomarlo al volver
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden && video.src && video.paused) start(video.src);
+        });
+        if (window.fetch && window.URL && URL.createObjectURL) {
+          fetch(src)
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+            .then(function (blob) { start(URL.createObjectURL(blob)); })
+            .catch(function () { start(src); });
+        } else {
+          start(src);
+        }
+      })();
+
+      // Home: al pasar la imagen, el header pasa a vidrio claro y muestra el logo chico
+      (function () {
+        var hero = document.querySelector('.hero--image');
+        if (!hero) return;
+        function update() {
+          document.body.classList.toggle('is-scrolled', hero.getBoundingClientRect().bottom < 90);
+        }
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+      })();
+
+      // Productos: aparecen al entrar en pantalla, escalonados por fila
+      (function () {
+        var cards = document.querySelectorAll('.product-card');
+        if (!cards.length) return;
+        if (!('IntersectionObserver' in window)) {
+          cards.forEach(function (c) { c.classList.add('is-in'); });
+          return;
+        }
+        var observer = new IntersectionObserver(function (entries) {
+          var batch = 0;
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.style.setProperty('--i', batch++);
+            entry.target.classList.add('is-in');
+            observer.unobserve(entry.target);
+          });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+        cards.forEach(function (c) { observer.observe(c); });
+
+        // Seguro: si por algún motivo el observer no se disparó, mostrar los que están en pantalla
+        setTimeout(function () {
+          cards.forEach(function (c) {
+            if (!c.classList.contains('is-in') && c.getBoundingClientRect().top < window.innerHeight) {
+              c.classList.add('is-in');
+              observer.unobserve(c);
+            }
+          });
+        }, 2500);
+      })();
+
+      // Cart: "Remove" sets the quantity to 0 and submits the form
+      (function () {
+        var form = document.getElementById('cart-form');
+        if (!form) return;
+        form.addEventListener('click', function (event) {
+          var button = event.target.closest('[data-remove-item]');
+          if (!button) return;
+          var input = form.querySelector('input[name="cart[update][' + button.dataset.removeItem + ']"]');
+          if (input) {
+            input.value = 0;
+            form.submit();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
