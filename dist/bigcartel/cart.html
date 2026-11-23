@@ -1,0 +1,53 @@
+<h1 class="page-title page-title--center">Cart</h1>
+
+{% if cart.items == blank %}
+  <div class="cart-empty">
+    <p class="empty-message">Your cart is empty.</p>
+    <a class="button" href="/products">Continue shopping</a>
+  </div>
+{% else %}
+  <form method="post" action="/cart" id="cart-form" class="cart" accept-charset="utf8">
+    <input type="hidden" name="utf8" value="✓">
+
+    {% if errors != blank %}
+      <ul class="errors">
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <ul class="cart__items">
+      {% for item in cart.items %}
+        <li class="cart-item">
+          <a class="cart-item__image" href="{{ item.product.url }}">
+            <img src="{{ item.product.image | product_image_url | constrain: 300, 300 }}" alt="{{ item.product.name | escape }}">
+          </a>
+
+          <div class="cart-item__info">
+            <a class="cart-item__name" href="{{ item.product.url }}">{{ item.product.name }}</a>
+            {% unless item.product.has_default_option %}
+              <span class="cart-item__option">{{ item.option.name }}</span>
+            {% endunless %}
+            <span class="cart-item__unit">{{ item.unit_price | money_with_sign }}</span>
+          </div>
+
+          <div class="cart-item__qty">
+            <label class="visually-hidden" for="qty-{{ item.id }}">Quantity of {{ item.product.name | escape }}</label>
+            <input id="qty-{{ item.id }}" class="field field--qty" type="number" min="0" name="cart[update][{{ item.id }}]" value="{{ item.quantity }}">
+            <button class="link-button" type="button" data-remove-item="{{ item.id }}">Remove</button>
+          </div>
+
+          <span class="cart-item__total">{{ item.price | money_with_sign }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <div class="cart__footer">
+      <button class="link-button" type="submit" name="update">Update cart</button>
+      <p class="cart__subtotal">Subtotal <strong>{{ cart.total | money_with_sign }}</strong></p>
+      <p class="cart__note">Shipping and taxes calculated at checkout.</p>
+      <button class="button button--full" type="submit" name="checkout">Checkout</button>
+    </div>
+  </form>
+{% endif %}

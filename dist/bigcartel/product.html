@@ -1,0 +1,63 @@
+<article class="product">
+  <div class="product__gallery">
+    {% for image in product.images %}
+      <img
+        src="{{ image | product_image_url | constrain: 1200 }}"
+        alt="{{ product.name | escape }} — image {{ forloop.index }}"
+        {% unless forloop.first %}loading="lazy"{% endunless %}
+      >
+    {% endfor %}
+  </div>
+
+  <div class="product__details">
+    <h1 class="product__name">{{ product.name }}</h1>
+
+    <p class="product__price">
+      {% if product.variable_pricing %}
+        From {{ product.min_price | money_with_sign }}
+      {% else %}
+        {{ product.default_price | money_with_sign }}
+      {% endif %}
+    </p>
+
+    {% if errors != blank %}
+      <ul class="errors">
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% case product.status %}
+      {% when 'active' %}
+        <form method="post" action="/cart" accept-charset="utf8" class="product__form">
+          <input type="hidden" name="utf8" value="✓">
+
+          {% if product.has_default_option %}
+            {{ product.option | hidden_option_input }}
+          {% else %}
+            <label class="field-label" for="option">Option</label>
+            <select id="option" class="field" name="cart[add][id]" required>
+              {% for option in product.options %}
+                <option value="{{ option.id }}"{% if option.sold_out %} disabled{% endif %}>
+                  {{ option.name }}{% if product.variable_pricing %} — {{ option.price | money_with_sign }}{% endif %}{% if option.sold_out %} (sold out){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          {% endif %}
+
+          <button class="button button--full" type="submit">Add to cart</button>
+        </form>
+      {% when 'sold-out' %}
+        <p class="product__status">Sold out</p>
+      {% when 'coming-soon' %}
+        <p class="product__status">Coming soon</p>
+    {% endcase %}
+
+    {% if product.description != blank %}
+      <div class="prose product__description" data-bc-hook="product-description">
+        {{ product.description | paragraphs }}
+      </div>
+    {% endif %}
+  </div>
+</article>
